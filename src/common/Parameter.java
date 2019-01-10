@@ -19,6 +19,7 @@ public class Parameter {
   private boolean showVersion;
   private boolean showHelp;
   private boolean ssl;
+  private boolean recordProgress;
 
   // database parameter
   private String dbName;
@@ -50,6 +51,8 @@ public class Parameter {
     showVersion = cmd.hasOption("v");
     showHelp = cmd.hasOption("h");
     ssl = cmd.hasOption("ssl");
+	recordProgress = cmd.hasOption("RP");
+
     dbName = cmd.getOptionValue("DB", "smartshark");
     dbUser = cmd.getOptionValue("U", "");
     dbPassword = cmd.getOptionValue("P", "");
@@ -111,11 +114,11 @@ public class Parameter {
     return dbAuthentication;
   }
 
-protected void checkIfInitialised() {
+  protected void checkIfInitialised() {
 	if (!isInitialized()) {
       System.out.println("The current parameter instance is not initialized!");
     }
-}
+  }
 
   public String getDebugLevel() {
     checkIfInitialised();
@@ -152,20 +155,25 @@ protected void checkIfInitialised() {
     System.out.println("This is " +getToolname()+ " version " + version);
   }
 
-public OptionHandler getOptionsHandler() {
+  public OptionHandler getOptionsHandler() {
 	return optionsHandler;
-}
+  }
 
-public void setOptionsHandler(OptionHandler optionsHandler) {
+  public void setOptionsHandler(OptionHandler optionsHandler) {
 	this.optionsHandler = optionsHandler;
-}
+  }
 
-public String getToolname() {
+  public String getToolname() {
 	return toolname;
-}
+  }
 
-public void setToolname(String toolname) {
+  public void setToolname(String toolname) {
 	this.toolname = toolname;
-}
+  }
+
+  public boolean isRecordProgress() {
+	checkIfInitialised();
+	return recordProgress;
+  }
 
 }

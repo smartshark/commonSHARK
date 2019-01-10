@@ -58,6 +58,9 @@ public class ConfigurationHandler {
 			props.add("-d");
 			props.add(properties.getProperty("log"));
 		}
+		if (properties.containsKey("progress")) {
+			props.add("-RP");
+		}
 		return props;
 	}
 

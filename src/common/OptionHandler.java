@@ -89,5 +89,11 @@ public class OptionHandler {
     option.setArgName("debug_level");
     options.addOption(option);
 
+    option = new Option("RP", "Record progress. Default: No");
+    option.setRequired(false);
+    option.setLongOpt("record_progress");
+    option.setArgs(0);
+    options.addOption(option);
+
   }
 }
