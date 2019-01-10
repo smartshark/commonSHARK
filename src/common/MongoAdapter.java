@@ -35,7 +35,7 @@ public class MongoAdapter {
 	public MongoAdapter (Parameter p) {
 		//TODO: make optional or merge
 //		targetstore = DatabaseHandler.createDatastore("localhost", 27017, "cfashark");
-		datastore = DatabaseHandler.createDatastore(Parameter.getInstance());
+		datastore = DatabaseHandler.createDatastore(p);
 		targetstore = datastore;
 	}
 	
@@ -229,7 +229,7 @@ public class MongoAdapter {
 	}
 	
 	public void setVcs(String url) {
-		datastore.find(VCSSystem.class)
+		this.vcs = datastore.find(VCSSystem.class)
 			.field("url").equal(url).get();
 	}
 
