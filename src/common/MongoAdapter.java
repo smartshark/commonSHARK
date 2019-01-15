@@ -1,7 +1,9 @@
 package common;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import org.bson.types.ObjectId;
@@ -29,6 +31,7 @@ public class MongoAdapter {
 	private HashMap<ObjectId, List<HunkBlameLine>> hblCache = new HashMap<>();
 	private HashMap<ObjectId, CFAState> cfaCache = new HashMap<>();
 	private HashMap<ObjectId, CFAState> cfaEntityCache = new HashMap<>();
+	private LinkedHashMap<ObjectId, ArrayList<FileAction>> fileActionsCache = new LinkedHashMap<>();
 	private boolean recordProgress;
 	private String pluginName;
 
@@ -78,6 +81,72 @@ public class MongoAdapter {
 		return fileIdCache.get(id);
 	}
 	
+	public void constructFileActionMap() {
+		fileActionsCache.clear();
+		List<Commit> commits = getCommits();
+		for (Commit c : commits) {
+			//skip merges
+			if (c.getParents().size()>1) {
+				continue;
+			}
+			List<FileAction> actions = getActions(c);
+			for (FileAction a : actions) {
+				if (!fileActionsCache.containsKey(a.getFileId())) {
+					fileActionsCache.put(a.getFileId(), new ArrayList<FileAction>());
+				}
+				fileActionsCache.get(a.getFileId()).add(a);
+				if (a.getMode().equals("R")) {
+					if (!fileActionsCache.containsKey(a.getOldFileId())) {
+						fileActionsCache.put(a.getOldFileId(), new ArrayList<FileAction>());
+					}
+					fileActionsCache.get(a.getOldFileId()).add(a);
+				}
+			}
+		}
+		//TODO: link renamed files?
+	}
+	
+	public List<FileAction> getActions(ObjectId fileId) {
+		ArrayList<FileAction> actions = fileActionsCache.get(fileId);
+		return actions;
+	}
+
+	public List<FileAction> getActionsFollowRenamesBackward(ObjectId fileId) {
+		ArrayList<FileAction> actions = fileActionsCache.get(fileId);
+		FileAction first = actions.get(0);
+		if (first.getMode().equals("R")) {
+			actions.remove(first);
+			actions.addAll(0, getActionsFollowRenamesBackward(first.getOldFileId()));
+		}
+		return actions;
+	}
+
+	public List<FileAction> getActionsFollowRenamesForward(ObjectId fileId) {
+		ArrayList<FileAction> actions = fileActionsCache.get(fileId);
+		FileAction last = actions.get(actions.size()-1);
+		if (last.getMode().equals("R")) {
+			actions.remove(last);
+			actions.addAll(getActionsFollowRenamesForward(last.getFileId()));
+		}
+		return actions;
+	}
+
+	
+	public List<FileAction> getActionsFollowRenames(ObjectId fileId) {
+		ArrayList<FileAction> actions = fileActionsCache.get(fileId);
+		FileAction first = actions.get(0);
+		if (first.getMode().equals("R")) {
+			actions.remove(first);
+			actions.addAll(0, getActionsFollowRenamesBackward(first.getOldFileId()));
+		}
+		FileAction last = actions.get(actions.size()-1);
+		if (last.getMode().equals("R")) {
+			actions.remove(last);
+			actions.addAll(getActionsFollowRenamesForward(last.getFileId()));
+		}
+		return actions;
+	}
+	
 	public List<FileAction> getActions(Commit commit) {
 		List<FileAction> actions = datastore.find(FileAction.class)
     		.field("commit_id").equal(commit.getId()).asList();
@@ -117,14 +186,29 @@ public class MongoAdapter {
 		}
 	}
 	
-	public List<Commit> getCommits() {
-		//TODO: add to cache?
+	public List<Commit> getCommitsNoCache() {
 		List<Commit> commits = datastore.find(Commit.class)
 				.field("vcs_system_id").equal(vcs.getId())
 				.project("code_entity_states", false)
 				.order("author_date")
 				.asList();
 		
+		return commits;
+	}
+
+	public List<Commit> getCommits() {
+		//always hits the db but caches the commits for later use
+		List<Commit> commits = datastore.find(Commit.class)
+				.field("vcs_system_id").equal(vcs.getId())
+				.project("code_entity_states", false)
+				.order("author_date")
+				.asList();
+		for (Commit commit : commits) {
+			if (!commitIdCache.containsKey(commit.getId())) {
+				commitCache.put(commit.getRevisionHash(), commit);
+				commitIdCache.put(commit.getId(), commit);
+			}
+		}
 		return commits;
 	}
 	
@@ -249,6 +333,10 @@ public class MongoAdapter {
 		this.targetstore = targetstore;
 	}
 
+	public Datastore getTargetstore(String hostname, int port, String database) {
+		return DatabaseHandler.createDatastore(hostname, port, database);
+	}
+	
 	public boolean isRecordProgress() {
 		return recordProgress;
 	}
