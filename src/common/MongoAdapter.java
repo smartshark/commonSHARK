@@ -86,7 +86,7 @@ public class MongoAdapter {
 		List<Commit> commits = getCommits();
 		for (Commit c : commits) {
 			//skip merges
-			if (c.getParents().size()>1) {
+			if (c.getParents()!=null && c.getParents().size()>1) {
 				continue;
 			}
 			List<FileAction> actions = getActions(c);
