@@ -34,11 +34,13 @@ public class MongoAdapter {
 	private LinkedHashMap<ObjectId, ArrayList<FileAction>> fileActionsCache = new LinkedHashMap<>();
 	private boolean recordProgress;
 	private String pluginName;
+	private Parameter parameter;
 
 	public MongoAdapter (Parameter p) {
 		//TODO: make optional or merge
 //		targetstore = DatabaseHandler.createDatastore("localhost", 27017, "cfashark");
-		datastore = DatabaseHandler.createDatastore(p);
+		parameter = p;
+		datastore = DatabaseHandler.createDatastore(parameter);
 		targetstore = datastore;
 	}
 	
@@ -336,7 +338,11 @@ public class MongoAdapter {
 	public Datastore getTargetstore(String hostname, int port, String database) {
 		return DatabaseHandler.createDatastore(hostname, port, database);
 	}
-	
+
+	public Datastore getTargetstore(String database) {
+		return DatabaseHandler.createDatastore(parameter, database);
+	}
+
 	public boolean isRecordProgress() {
 		return recordProgress;
 	}

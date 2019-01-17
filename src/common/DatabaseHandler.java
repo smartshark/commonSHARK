@@ -30,8 +30,12 @@ public class DatabaseHandler {
 	
 	    return datastore;
 	}
-	
+
 	public static Datastore createDatastore(Parameter parameter) {
+		return createDatastore(parameter, parameter.getDbName());
+	}
+	
+	public static Datastore createDatastore(Parameter parameter, String dbName) {
 	    Morphia morphia = new Morphia();
 	    morphia.mapPackage("de.ugoe.cs.smartshark.model");
 	    Datastore datastore = null;
@@ -43,7 +47,7 @@ public class DatabaseHandler {
 	        		new MongoClient(
 	        				parameter.getDbHostname(), 
 	        				parameter.getDbPort()), 
-	        		parameter.getDbName());
+	        		dbName);
 	      } else {
 	        ServerAddress addr = new ServerAddress(
 	        		parameter.getDbHostname(), 
@@ -57,7 +61,7 @@ public class DatabaseHandler {
 	        MongoClient client = new MongoClient(addr, credentialsList);
 	        datastore = morphia.createDatastore(
 	        		client, 
-	        		parameter.getDbName());
+	        		dbName);
 	      }
 	    } catch (Exception e) {
 	      System.err.println(e.getMessage());
