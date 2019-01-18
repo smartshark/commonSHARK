@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.Datastore;
@@ -97,7 +98,7 @@ public class MongoAdapter {
 					fileActionsCache.put(a.getFileId(), new ArrayList<FileAction>());
 				}
 				fileActionsCache.get(a.getFileId()).add(a);
-				if (a.getMode().equals("R")) {
+				if (a.getMode().equals("R") || a.getMode().equals("C")) {
 					if (!fileActionsCache.containsKey(a.getOldFileId())) {
 						fileActionsCache.put(a.getOldFileId(), new ArrayList<FileAction>());
 					}
@@ -114,17 +115,22 @@ public class MongoAdapter {
 	}
 
 	public List<FileAction> getActionsFollowRenamesBackward(ObjectId fileId) {
-		ArrayList<FileAction> actions = fileActionsCache.get(fileId);
+		ArrayList<FileAction> actions = new ArrayList<>(fileActionsCache.get(fileId));
 		FileAction first = actions.get(0);
-		if (first.getMode().equals("R")) {
-			actions.remove(first);
-			actions.addAll(0, getActionsFollowRenamesBackward(first.getOldFileId()));
+		if (first.getMode().equals("R") || first.getMode().equals("C") ) {
+			List<FileAction> followedActions = getActionsFollowRenamesBackward(first.getOldFileId());
+			Date firstDate = getCommit(first.getCommitId()).getAuthorDate();
+			followedActions = followedActions.stream()
+					.filter(a -> getCommit(a.getCommitId()).getAuthorDate().before(firstDate))
+					.filter(a->!(a.getMode().equals("C") && a.getOldFileId().equals(first.getFileId())))
+					.collect(Collectors.toList());
+			actions.addAll(0, followedActions);
 		}
 		return actions;
 	}
 
 	public List<FileAction> getActionsFollowRenamesForward(ObjectId fileId) {
-		ArrayList<FileAction> actions = fileActionsCache.get(fileId);
+		ArrayList<FileAction> actions = new ArrayList<>(fileActionsCache.get(fileId));
 		FileAction last = actions.get(actions.size()-1);
 		if (last.getMode().equals("R")) {
 			actions.remove(last);
@@ -135,17 +141,29 @@ public class MongoAdapter {
 
 	
 	public List<FileAction> getActionsFollowRenames(ObjectId fileId) {
-		ArrayList<FileAction> actions = fileActionsCache.get(fileId);
+		List<FileAction> actions = new ArrayList<>(fileActionsCache.get(fileId));
+
 		FileAction first = actions.get(0);
-		if (first.getMode().equals("R")) {
-			actions.remove(first);
-			actions.addAll(0, getActionsFollowRenamesBackward(first.getOldFileId()));
+		if (first.getMode().equals("R") || first.getMode().equals("C") ) {
+			List<FileAction> followedActions = getActionsFollowRenamesBackward(first.getOldFileId());
+			Date firstDate = getCommit(first.getCommitId()).getAuthorDate();
+			followedActions = followedActions.stream()
+					.filter(a -> getCommit(a.getCommitId()).getAuthorDate().before(firstDate))
+					.filter(a->!(a.getMode().equals("C") && a.getOldFileId().equals(first.getFileId())))
+					.collect(Collectors.toList());
+			actions.addAll(0, followedActions);
 		}
+
 		FileAction last = actions.get(actions.size()-1);
 		if (last.getMode().equals("R")) {
 			actions.remove(last);
 			actions.addAll(getActionsFollowRenamesForward(last.getFileId()));
 		}
+
+		actions = actions.stream()
+				.filter(a->!((a.getMode().equals("C") || a.getMode().equals("R")) && a.getOldFileId().equals(fileId)))
+				.collect(Collectors.toList());
+
 		return actions;
 	}
 	
