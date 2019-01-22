@@ -2,6 +2,7 @@ package common;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -10,13 +11,30 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import common.DiffMatchPatch.Diff;
-import de.ugoe.cs.smartshark.model.Commit;
 import de.ugoe.cs.smartshark.model.Hunk;
 
 
 public class HunkSignatureHandler {
 	private DiffMatchPatch dmp = new DiffMatchPatch();
 
+	public LinkedHashMap<Integer, Integer> getHunksLineMap(List<Hunk>hunks) {
+		//reverse map (new to old line)
+		LinkedHashMap<Integer, Integer> lineMap = new LinkedHashMap<>();
+		hunks.sort(new Comparator<Hunk>() {
+
+			@Override
+			public int compare(Hunk o1, Hunk o2) {
+				return o1.getNewStart().compareTo(o2.getNewStart());
+			}
+		});
+		int d = 0;
+		for (Hunk h : hunks) {
+			d+=h.getNewLines()-h.getOldLines();
+			lineMap.put(h.getNewStart(), d);
+		}
+		return lineMap;
+	}
+	
 	public LinkedHashMap<Integer, Integer> getHunkLineMap(Hunk hunk) {
 		//reverse map (new to old line)
 		LinkedHashMap<Integer, Integer> lineMap = new LinkedHashMap<>();
