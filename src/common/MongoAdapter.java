@@ -54,15 +54,59 @@ public class MongoAdapter {
 		return hblCache.get(h.getId());
 	}
 
-	public List<CodeEntityState> getCodeEntityStates(ObjectId commitId, ObjectId fileId, String type) {
-		List<CodeEntityState> states = datastore.find(CodeEntityState.class)
-				.field("commit_id").equal(commitId)
-				.field("file_id").equal(fileId)
-				.field("ce_type").equal(type)
-				.order("start_line")
-				.asList();
+	public List<CodeEntityState> getCodeEntityStates(ObjectId commitId, ObjectId fileId) {
+		List<CodeEntityState> states = new ArrayList<>();
+		Commit commit = datastore.get(Commit.class, commitId);
+		for (ObjectId id : commit.getCodeEntityStates()) {
+			List<CodeEntityState> ces = datastore.find(CodeEntityState.class)
+					.field("_id").equal(id)
+					.field("file_id").equal(fileId)
+//					.order("start_line")
+					.asList();
+			states.addAll(ces);
+		}
 		return states;
 	}
+	
+	public List<CodeEntityState> getCodeEntityStates(ObjectId commitId, ObjectId fileId, String type) {
+		List<CodeEntityState> states = new ArrayList<>();
+		Commit commit = datastore.get(Commit.class, commitId);
+		for (ObjectId id : commit.getCodeEntityStates()) {
+			List<CodeEntityState> ces = datastore.find(CodeEntityState.class)
+					.field("_id").equal(id)
+					.field("file_id").equal(fileId)
+					.field("ce_type").equal(type)
+					.order("start_line")
+					.asList();
+			states.addAll(ces);
+		}
+		return states;
+	}
+
+	public List<CodeEntityState> getCodeEntityStates(ObjectId commitId, String type) {
+		List<CodeEntityState> states = new ArrayList<>();
+		Commit commit = datastore.get(Commit.class, commitId);
+		for (ObjectId id : commit.getCodeEntityStates()) {
+			List<CodeEntityState> ces = datastore.find(CodeEntityState.class)
+					.field("_id").equal(id)
+					.field("ce_type").equal(type)
+					.order("start_line")
+					.asList();
+			states.addAll(ces);
+		}
+		return states;
+	}
+
+	public List<CodeEntityState> getCodeEntityStates(ObjectId commitId) {
+		List<CodeEntityState> states = new ArrayList<>();
+		Commit commit = datastore.get(Commit.class, commitId);
+		for (ObjectId id : commit.getCodeEntityStates()) {
+			CodeEntityState ces = datastore.get(CodeEntityState.class, id);
+			states.add(ces);
+		}
+		return states;
+	}
+
 	
 	public File getFile(String path) {
 		if (!fileCache.containsKey(path)) {
@@ -115,7 +159,7 @@ public class MongoAdapter {
 	}
 
 	public List<FileAction> getActionsFollowRenamesBackward(ObjectId fileId) {
-		ArrayList<FileAction> actions = new ArrayList<>(fileActionsCache.get(fileId));
+		List<FileAction> actions = new ArrayList<>(fileActionsCache.get(fileId));
 		FileAction first = actions.get(0);
 		if (first.getMode().equals("R") || first.getMode().equals("C") ) {
 			List<FileAction> followedActions = getActionsFollowRenamesBackward(first.getOldFileId());
@@ -126,6 +170,11 @@ public class MongoAdapter {
 					.collect(Collectors.toList());
 			actions.addAll(0, followedActions);
 		}
+		
+		actions = actions.stream()
+				.filter(a->!((a.getMode().equals("C") || a.getMode().equals("R")) && a.getOldFileId().equals(fileId)))
+				.collect(Collectors.toList());
+
 		return actions;
 	}
 
