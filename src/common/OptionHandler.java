@@ -95,5 +95,10 @@ public class OptionHandler {
     option.setArgs(0);
     options.addOption(option);
 
+    option = new Option("sd", "Separate target database.");
+    option.setRequired(false);
+    option.setLongOpt("separate_database");
+    option.setArgs(0);
+    options.addOption(option);
   }
 }

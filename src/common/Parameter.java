@@ -29,6 +29,8 @@ public class Parameter {
   private int dbPort;
   private String dbAuthentication;
 
+  private boolean separateDatabase;
+
   // debug parameter
   private String debugLevel;
 
@@ -60,6 +62,8 @@ public class Parameter {
     dbPort = Integer.parseInt(cmd.getOptionValue("p", "27017"));
     dbAuthentication = cmd.getOptionValue("a", "");
     debugLevel = cmd.getOptionValue("d", "ERROR");
+
+	separateDatabase = cmd.hasOption("sd");
 
     initialized = true;
   }
@@ -174,6 +178,11 @@ public class Parameter {
   public boolean isRecordProgress() {
 	checkIfInitialised();
 	return recordProgress;
+  }
+
+  public boolean isSeparateDatabase() {
+    checkIfInitialised();
+	return separateDatabase;
   }
 
 }

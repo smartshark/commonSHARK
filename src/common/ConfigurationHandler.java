@@ -35,6 +35,17 @@ public class ConfigurationHandler {
 	}
 
 	protected ArrayList<String> convertProperties(Properties properties) {
+		if (properties.containsKey("use")) {
+			Properties included = new Properties();
+			String filename = properties.getProperty("use");
+			try {
+				included.load(new FileInputStream(filename));
+				included.putAll(properties);
+				properties = included;
+			} catch (Exception e) {
+				System.out.println("ERROR: Failed to load configuration from "+filename);
+			}
+		}
 		ArrayList<String> props = new ArrayList<>();
 		props.add("-H");
 		props.add(properties.getProperty("hostname"));
@@ -61,6 +72,10 @@ public class ConfigurationHandler {
 		if (properties.containsKey("progress")) {
 			props.add("-RP");
 		}
+		if (properties.containsKey("separate_database")) {
+			props.add("-sd");
+		}
+
 		return props;
 	}
 
