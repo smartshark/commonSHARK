@@ -172,7 +172,10 @@ public class MongoAdapter {
 		}
 		
 		actions = actions.stream()
-				.filter(a->!((a.getMode().equals("C") || a.getMode().equals("R")) && a.getOldFileId().equals(fileId)))
+				.filter(a->!((a.getMode().equals("C")
+//						   || a.getMode().equals("R")
+						   ) 
+						   && a.getOldFileId().equals(fileId)))
 				.collect(Collectors.toList());
 
 		return actions;
@@ -181,7 +184,7 @@ public class MongoAdapter {
 	public List<FileAction> getActionsFollowRenamesForward(ObjectId fileId) {
 		ArrayList<FileAction> actions = new ArrayList<>(fileActionsCache.get(fileId));
 		FileAction last = actions.get(actions.size()-1);
-		if (last.getMode().equals("R")) {
+		if (last.getMode().equals("R") && actions.size() > 1) {
 			actions.remove(last);
 			actions.addAll(getActionsFollowRenamesForward(last.getFileId()));
 		}
@@ -191,7 +194,7 @@ public class MongoAdapter {
 	
 	public List<FileAction> getActionsFollowRenames(ObjectId fileId) {
 		List<FileAction> actions = new ArrayList<>(fileActionsCache.get(fileId));
-
+		
 		FileAction first = actions.get(0);
 		if (first.getMode().equals("R") || first.getMode().equals("C") ) {
 			List<FileAction> followedActions = getActionsFollowRenamesBackward(first.getOldFileId());
@@ -210,7 +213,10 @@ public class MongoAdapter {
 		}
 
 		actions = actions.stream()
-				.filter(a->!((a.getMode().equals("C") || a.getMode().equals("R")) && a.getOldFileId().equals(fileId)))
+				.filter(a->!((a.getMode().equals("C")
+//						   || a.getMode().equals("R")
+						   )
+						   && a.getOldFileId().equals(fileId)))
 				.collect(Collectors.toList());
 
 		return actions;
