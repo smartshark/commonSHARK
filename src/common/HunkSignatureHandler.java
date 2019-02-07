@@ -30,7 +30,7 @@ public class HunkSignatureHandler {
 		int d = 0;
 		for (Hunk h : hunks) {
 			d+=h.getNewLines()-h.getOldLines();
-			lineMap.put(h.getNewStart(), d);
+			lineMap.put(h.getNewStart()+h.getNewLines(), d);
 		}
 		return lineMap;
 	}
