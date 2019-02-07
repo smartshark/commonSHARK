@@ -1,5 +1,9 @@
 package common;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.apache.commons.cli.*;
 
 /**
@@ -33,21 +37,33 @@ public class Parameter {
 
   // debug parameter
   private String debugLevel;
+  private String configuration;
 
   private boolean initialized = false;
   private OptionHandler optionsHandler;
+  private ConfigurationHandler configurationHandler;
   protected CommandLine cmd;
 
   public static synchronized Parameter getInstance() {
     if (instance == null) {
       instance = new Parameter();
       instance.setOptionsHandler(new OptionHandler());
+      instance.setConfigurationHandler(new ConfigurationHandler());
     }
     return instance;
   }
 
   public void init(String[] args) {
     parseCommandLineArguments(args);
+    if (cmd.hasOption("c")) {
+    	configuration = cmd.getOptionValue("c", "");
+    	String[] configurationArgs = configurationHandler.loadConfiguration(configuration);
+    	List<String> caList = new ArrayList<String>(Arrays.asList(configurationArgs));
+		caList.addAll(Arrays.asList(args));
+		args = caList.toArray(configurationArgs);
+		parseCommandLineArguments(args);
+    }
+
     checkArguments();
     
     showVersion = cmd.hasOption("v");
@@ -64,6 +80,8 @@ public class Parameter {
     debugLevel = cmd.getOptionValue("d", "ERROR");
 
 	separateDatabase = cmd.hasOption("sd");
+
+	ConfigurationHandler.getInstance().setLogLevel(debugLevel);
 
     initialized = true;
   }
@@ -185,4 +203,17 @@ public class Parameter {
 	return separateDatabase;
   }
 
+  public String getConfiguration() {
+	return configuration;
+  }
+
+public ConfigurationHandler getConfigurationHandler() {
+	return configurationHandler;
+}
+
+public void setConfigurationHandler(ConfigurationHandler configurationHandler) {
+	this.configurationHandler = configurationHandler;
+}
+
+  
 }

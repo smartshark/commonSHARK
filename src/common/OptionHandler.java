@@ -100,5 +100,13 @@ public class OptionHandler {
     option.setLongOpt("separate_database");
     option.setArgs(0);
     options.addOption(option);
+
+    option = new Option("c", "Configuration file (other options will override configuration entries).");
+    option.setRequired(false);
+    option.setLongOpt("configuration");
+    option.setArgs(1);
+    option.setArgName("configuration");
+    options.addOption(option);
+
   }
 }
