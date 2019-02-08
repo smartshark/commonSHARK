@@ -1,6 +1,7 @@
 package common;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -9,7 +10,9 @@ import java.util.stream.Collectors;
 
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.Datastore;
+import org.slf4j.LoggerFactory;
 
+import ch.qos.logback.classic.Logger;
 import de.ugoe.cs.smartshark.model.CFAState;
 import de.ugoe.cs.smartshark.model.CodeEntityState;
 import de.ugoe.cs.smartshark.model.Commit;
@@ -36,6 +39,7 @@ public class MongoAdapter {
 	private boolean recordProgress;
 	private String pluginName;
 	private Parameter parameter;
+	protected static Logger logger = (Logger) LoggerFactory.getLogger(MongoAdapter.class.getCanonicalName());
 
 	public MongoAdapter (Parameter p) {
 		//TODO: make optional or merge
@@ -63,6 +67,7 @@ public class MongoAdapter {
 					.field("file_id").equal(fileId)
 //					.order("start_line")
 					.asList();
+			ces.sort(Comparator.comparing(CodeEntityState::getStartLine));
 			states.addAll(ces);
 		}
 		return states;
@@ -76,8 +81,9 @@ public class MongoAdapter {
 					.field("_id").equal(id)
 					.field("file_id").equal(fileId)
 					.field("ce_type").equal(type)
-					.order("start_line")
+//					.order("start_line")
 					.asList();
+			ces.sort(Comparator.comparing(CodeEntityState::getStartLine));
 			states.addAll(ces);
 		}
 		return states;
@@ -90,8 +96,9 @@ public class MongoAdapter {
 			List<CodeEntityState> ces = datastore.find(CodeEntityState.class)
 					.field("_id").equal(id)
 					.field("ce_type").equal(type)
-					.order("start_line")
+//					.order("start_line")
 					.asList();
+			ces.sort(Comparator.comparing(CodeEntityState::getStartLine));
 			states.addAll(ces);
 		}
 		return states;
@@ -130,8 +137,15 @@ public class MongoAdapter {
 	
 	public void constructFileActionMap() {
 		fileActionsCache.clear();
+		logger.info("Constructing file action map..");
+		logger.info("  Fetch commits..");
 		List<Commit> commits = getCommits();
+		int i = 0;
+		int size = commits.size();
+
 		for (Commit c : commits) {
+			i++;
+			logger.info("  Processing: "+i+"/"+size+" "+c.getRevisionHash());
 			//skip merges
 			if (c.getParents()!=null && c.getParents().size()>1) {
 				continue;
@@ -151,6 +165,7 @@ public class MongoAdapter {
 			}
 		}
 		//TODO: link renamed files?
+		logger.info("  Done!");
 	}
 	
 	public List<FileAction> getActions(ObjectId fileId) {
@@ -265,9 +280,9 @@ public class MongoAdapter {
 		List<Commit> commits = datastore.find(Commit.class)
 				.field("vcs_system_id").equal(vcs.getId())
 				.project("code_entity_states", false)
-				.order("committer_date")
+//				.order("committer_date")
 				.asList();
-		
+		commits.sort(Comparator.comparing(Commit::getCommitterDate));
 		return commits;
 	}
 
@@ -276,8 +291,9 @@ public class MongoAdapter {
 		List<Commit> commits = datastore.find(Commit.class)
 				.field("vcs_system_id").equal(vcs.getId())
 				.project("code_entity_states", false)
-				.order("committer_date")
+//				.order("committer_date")
 				.asList();
+		commits.sort(Comparator.comparing(Commit::getCommitterDate));
 		for (Commit commit : commits) {
 			if (!commitIdCache.containsKey(commit.getId())) {
 				commitCache.put(commit.getRevisionHash(), commit);
