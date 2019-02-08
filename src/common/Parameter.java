@@ -41,14 +41,13 @@ public class Parameter {
 
   private boolean initialized = false;
   private OptionHandler optionsHandler;
-  private ConfigurationHandler configurationHandler;
+  private ConfigurationHandler configurationHandler = ConfigurationHandler.getInstance();
   protected CommandLine cmd;
 
   public static synchronized Parameter getInstance() {
     if (instance == null) {
       instance = new Parameter();
       instance.setOptionsHandler(new OptionHandler());
-      instance.setConfigurationHandler(new ConfigurationHandler());
     }
     return instance;
   }

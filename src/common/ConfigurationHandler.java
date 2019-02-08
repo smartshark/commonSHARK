@@ -22,7 +22,7 @@ public class ConfigurationHandler {
 	public String[] loadConfiguration(String name) {
 		String[] args = new String[0];
 		try {
-			Properties properties = new Properties();
+			OrderedProperties properties = new OrderedProperties();
 			properties.load(new FileInputStream(name));
 			ArrayList<String> props = new ArrayList<>();
 			props.addAll(convertProperties(properties));
@@ -35,9 +35,9 @@ public class ConfigurationHandler {
 	}
 
 	protected ArrayList<String> convertProperties(Properties properties) {
-		if (properties.containsKey("use")) {
-			Properties included = new Properties();
-			String filename = properties.getProperty("use");
+		if (properties.containsKey("configuration")) {
+			OrderedProperties included = new OrderedProperties();
+			String filename = properties.getProperty("configuration");
 			try {
 				included.load(new FileInputStream(filename));
 				included.putAll(properties);
@@ -46,34 +46,16 @@ public class ConfigurationHandler {
 				System.out.println("ERROR: Failed to load configuration from "+filename);
 			}
 		}
+		
 		ArrayList<String> props = new ArrayList<>();
-		props.add("-H");
-		props.add(properties.getProperty("hostname"));
-		props.add("-p");
-		props.add(properties.getProperty("port"));
-		props.add("-DB");
-		props.add(properties.getProperty("db"));
-		if (properties.containsKey("user")) {
-			props.add("-U");
-			props.add(properties.getProperty("user"));
-		}
-		if (properties.containsKey("password")) {
-			props.add("-P");
-			props.add(properties.getProperty("password"));
-		}
-		if (properties.containsKey("authentication")) {
-			props.add("-a");
-			props.add(properties.getProperty("authentication"));
-		}
-		if (properties.containsKey("log")) {
-			props.add("-d");
-			props.add(properties.getProperty("log"));
-		}
-		if (properties.containsKey("progress")) {
-			props.add("-RP");
-		}
-		if (properties.containsKey("separate_database")) {
-			props.add("-sd");
+		for (Object p : properties.keySet()) {
+			props.add("--"+p.toString());
+			
+			String v = properties.getProperty(p.toString(), "");
+			
+			if (!v.isEmpty()) {
+				props.add(v);
+			}
 		}
 
 		return props;
