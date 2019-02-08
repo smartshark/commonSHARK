@@ -163,9 +163,9 @@ public class MongoAdapter {
 		FileAction first = actions.get(0);
 		if (first.getMode().equals("R") || first.getMode().equals("C") ) {
 			List<FileAction> followedActions = getActionsFollowRenamesBackward(first.getOldFileId());
-			Date firstDate = getCommit(first.getCommitId()).getAuthorDate();
+			Date firstDate = getCommit(first.getCommitId()).getCommitterDate();
 			followedActions = followedActions.stream()
-					.filter(a -> getCommit(a.getCommitId()).getAuthorDate().before(firstDate))
+					.filter(a -> getCommit(a.getCommitId()).getCommitterDate().before(firstDate))
 					.filter(a->!(a.getMode().equals("C") && a.getOldFileId().equals(first.getFileId())))
 					.collect(Collectors.toList());
 			actions.addAll(0, followedActions);
@@ -198,9 +198,9 @@ public class MongoAdapter {
 		FileAction first = actions.get(0);
 		if (first.getMode().equals("R") || first.getMode().equals("C") ) {
 			List<FileAction> followedActions = getActionsFollowRenamesBackward(first.getOldFileId());
-			Date firstDate = getCommit(first.getCommitId()).getAuthorDate();
+			Date firstDate = getCommit(first.getCommitId()).getCommitterDate();
 			followedActions = followedActions.stream()
-					.filter(a -> getCommit(a.getCommitId()).getAuthorDate().before(firstDate))
+					.filter(a -> getCommit(a.getCommitId()).getCommitterDate().before(firstDate))
 					.filter(a->!(a.getMode().equals("C") && a.getOldFileId().equals(first.getFileId())))
 					.collect(Collectors.toList());
 			actions.addAll(0, followedActions);
@@ -265,7 +265,7 @@ public class MongoAdapter {
 		List<Commit> commits = datastore.find(Commit.class)
 				.field("vcs_system_id").equal(vcs.getId())
 				.project("code_entity_states", false)
-				.order("author_date")
+				.order("committer_date")
 				.asList();
 		
 		return commits;
@@ -276,7 +276,7 @@ public class MongoAdapter {
 		List<Commit> commits = datastore.find(Commit.class)
 				.field("vcs_system_id").equal(vcs.getId())
 				.project("code_entity_states", false)
-				.order("author_date")
+				.order("committer_date")
 				.asList();
 		for (Commit commit : commits) {
 			if (!commitIdCache.containsKey(commit.getId())) {
