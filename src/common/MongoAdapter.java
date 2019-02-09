@@ -36,6 +36,7 @@ public class MongoAdapter {
 	private HashMap<ObjectId, CFAState> cfaCache = new HashMap<>();
 	private HashMap<ObjectId, CFAState> cfaEntityCache = new HashMap<>();
 	private LinkedHashMap<ObjectId, ArrayList<FileAction>> fileActionsCache = new LinkedHashMap<>();
+	private List<String> revisionHashes = new ArrayList<String>();
 	private boolean recordProgress;
 	private String pluginName;
 	private Parameter parameter;
@@ -306,8 +307,7 @@ public class MongoAdapter {
 				.project("code_entity_states", false)
 //				.order("committer_date")
 				.asList();
-		commits.sort(Comparator.comparing(Commit::getCommitterDate)
-				.thenComparing(Commit::getAuthorDate));
+		sortCommits(commits);
 		return commits;
 	}
 
@@ -318,8 +318,7 @@ public class MongoAdapter {
 				.project("code_entity_states", false)
 //				.order("committer_date")
 				.asList();
-		commits.sort(Comparator.comparing(Commit::getCommitterDate)
-				.thenComparing(Commit::getAuthorDate));
+		sortCommits(commits);
 		for (Commit commit : commits) {
 			if (!commitIdCache.containsKey(commit.getId())) {
 				commitCache.put(commit.getRevisionHash(), commit);
@@ -327,6 +326,17 @@ public class MongoAdapter {
 			}
 		}
 		return commits;
+	}
+
+	private void sortCommits(List<Commit> commits) {
+		if (revisionHashes.isEmpty()) {
+			commits.sort(Comparator.comparing(Commit::getCommitterDate)
+					.thenComparing(Commit::getAuthorDate));
+		} else {
+			commits.sort((e1, e2)
+					-> revisionHashes.indexOf(e1.getRevisionHash())
+		             - revisionHashes.indexOf(e2.getRevisionHash()));
+		}
 	}
 	
 	public Commit getCommit(String hash) {
@@ -472,6 +482,14 @@ public class MongoAdapter {
 
 	public void setPluginName(String pluginName) {
 		this.pluginName = pluginName;
+	}
+
+	public List<String> getRevisionHashes() {
+		return revisionHashes;
+	}
+
+	public void setRevisionHashes(List<String> revisionHashes) {
+		this.revisionHashes = revisionHashes;
 	}
 
 }
