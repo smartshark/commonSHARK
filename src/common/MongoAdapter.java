@@ -145,7 +145,7 @@ public class MongoAdapter {
 
 		for (Commit c : commits) {
 			i++;
-			logger.info("  Processing: "+i+"/"+size+" "+c.getRevisionHash());
+			//logger.info("  Processing: "+i+"/"+size+" "+c.getRevisionHash());
 			//skip merges
 			if (c.getParents()!=null && c.getParents().size()>1) {
 				continue;
@@ -198,6 +198,19 @@ public class MongoAdapter {
 
 	public List<FileAction> getActionsFollowRenamesForward(ObjectId fileId) {
 		ArrayList<FileAction> actions = new ArrayList<>(fileActionsCache.get(fileId));
+		
+		for (FileAction a : actions) {
+        	File file = getFile(a.getFileId());
+        	Commit commit = getCommit(a.getCommitId());
+
+        	logger.info(""
+        			+"  "+a.getMode()
+        			+"  "+commit.getRevisionHash().substring(0,8)
+        			+"  "+file.getPath());
+
+		}
+
+		
 		FileAction last = actions.get(actions.size()-1);
 		if (last.getMode().equals("R") && actions.size() > 1) {
 			actions.remove(last);
@@ -221,6 +234,17 @@ public class MongoAdapter {
 			actions.addAll(0, followedActions);
 		}
 
+		for (FileAction a : actions) {
+        	File file = getFile(a.getFileId());
+        	Commit commit = getCommit(a.getCommitId());
+
+        	logger.info(""
+        			+"  "+a.getMode()
+        			+"  "+commit.getRevisionHash().substring(0,8)
+        			+"  "+file.getPath());
+
+		}
+		
 		FileAction last = actions.get(actions.size()-1);
 		if (last.getMode().equals("R")) {
 			actions.remove(last);
@@ -282,7 +306,8 @@ public class MongoAdapter {
 				.project("code_entity_states", false)
 //				.order("committer_date")
 				.asList();
-		commits.sort(Comparator.comparing(Commit::getCommitterDate));
+		commits.sort(Comparator.comparing(Commit::getCommitterDate)
+				.thenComparing(Commit::getAuthorDate));
 		return commits;
 	}
 
@@ -293,7 +318,8 @@ public class MongoAdapter {
 				.project("code_entity_states", false)
 //				.order("committer_date")
 				.asList();
-		commits.sort(Comparator.comparing(Commit::getCommitterDate));
+		commits.sort(Comparator.comparing(Commit::getCommitterDate)
+				.thenComparing(Commit::getAuthorDate));
 		for (Commit commit : commits) {
 			if (!commitIdCache.containsKey(commit.getId())) {
 				commitCache.put(commit.getRevisionHash(), commit);
