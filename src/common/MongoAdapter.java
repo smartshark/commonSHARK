@@ -141,11 +141,11 @@ public class MongoAdapter {
 		logger.info("Constructing file action map..");
 		logger.info("  Fetch commits..");
 		List<Commit> commits = getCommits();
-		int i = 0;
-		int size = commits.size();
+//		int i = 0;
+//		int size = commits.size();
 
 		for (Commit c : commits) {
-			i++;
+//			i++;
 			//logger.info("  Processing: "+i+"/"+size+" "+c.getRevisionHash());
 			//skip merges
 			if (c.getParents()!=null && c.getParents().size()>1) {
@@ -200,22 +200,26 @@ public class MongoAdapter {
 	public List<FileAction> getActionsFollowRenamesForward(ObjectId fileId) {
 		ArrayList<FileAction> actions = new ArrayList<>(fileActionsCache.get(fileId));
 		
-		for (FileAction a : actions) {
-        	File file = getFile(a.getFileId());
-        	Commit commit = getCommit(a.getCommitId());
-
-        	logger.info(""
-        			+"  "+a.getMode()
-        			+"  "+commit.getRevisionHash().substring(0,8)
-        			+"  "+file.getPath());
-
-		}
-
+//		for (FileAction a : actions) {
+//        	File file = getFile(a.getFileId());
+//        	Commit commit = getCommit(a.getCommitId());
+//
+//        	logger.info(""
+//        			+"  "+a.getMode()
+//        			+"  "+commit.getRevisionHash().substring(0,8)
+//        			+"  "+file.getPath());
+//
+//		}
 		
 		FileAction last = actions.get(actions.size()-1);
 		if (last.getMode().equals("R") && actions.size() > 1) {
-			actions.remove(last);
-			actions.addAll(getActionsFollowRenamesForward(last.getFileId()));
+			if (last.getFileId().equals(actions.get(0).getFileId())) {
+				actions.clear();
+				actions.add(last);
+			} else {
+				actions.remove(last);
+				actions.addAll(getActionsFollowRenamesForward(last.getFileId()));
+			}
 		}
 		return actions;
 	}
@@ -235,16 +239,16 @@ public class MongoAdapter {
 			actions.addAll(0, followedActions);
 		}
 
-		for (FileAction a : actions) {
-        	File file = getFile(a.getFileId());
-        	Commit commit = getCommit(a.getCommitId());
-
-        	logger.info(""
-        			+"  "+a.getMode()
-        			+"  "+commit.getRevisionHash().substring(0,8)
-        			+"  "+file.getPath());
-
-		}
+//		for (FileAction a : actions) {
+//        	File file = getFile(a.getFileId());
+//        	Commit commit = getCommit(a.getCommitId());
+//
+//        	logger.info(""
+//        			+"  "+a.getMode()
+//        			+"  "+commit.getRevisionHash().substring(0,8)
+//        			+"  "+file.getPath());
+//
+//		}
 		
 		FileAction last = actions.get(actions.size()-1);
 		if (last.getMode().equals("R")) {
