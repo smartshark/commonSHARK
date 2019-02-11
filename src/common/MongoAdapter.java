@@ -178,13 +178,19 @@ public class MongoAdapter {
 		List<FileAction> actions = new ArrayList<>(fileActionsCache.get(fileId));
 		FileAction first = actions.get(0);
 		if (first.getMode().equals("R") || first.getMode().equals("C") ) {
-			List<FileAction> followedActions = getActionsFollowRenamesBackward(first.getOldFileId());
-			Date firstDate = getCommit(first.getCommitId()).getCommitterDate();
-			followedActions = followedActions.stream()
-					.filter(a -> getCommit(a.getCommitId()).getCommitterDate().before(firstDate))
-					.filter(a->!(a.getMode().equals("C") && a.getOldFileId().equals(first.getFileId())))
-					.collect(Collectors.toList());
-			actions.addAll(0, followedActions);
+			//TODO: this only works on one level
+			if (first.getFileId().equals(actions.get(actions.size()-1).getFileId())) {
+				actions.clear();
+				actions.add(first);
+			} else {
+				List<FileAction> followedActions = getActionsFollowRenamesBackward(first.getOldFileId());
+				Date firstDate = getCommit(first.getCommitId()).getCommitterDate();
+				followedActions = followedActions.stream()
+						.filter(a -> getCommit(a.getCommitId()).getCommitterDate().before(firstDate))
+						.filter(a->!(a.getMode().equals("C") && a.getOldFileId().equals(first.getFileId())))
+						.collect(Collectors.toList());
+				actions.addAll(0, followedActions);
+			}
 		}
 		
 		actions = actions.stream()
@@ -213,6 +219,7 @@ public class MongoAdapter {
 		
 		FileAction last = actions.get(actions.size()-1);
 		if (last.getMode().equals("R") && actions.size() > 1) {
+			//TODO: this only works on one level
 			if (last.getFileId().equals(actions.get(0).getFileId())) {
 				actions.clear();
 				actions.add(last);
