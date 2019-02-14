@@ -170,53 +170,52 @@ public class MongoAdapter {
 	}
 
 	public List<FileAction> getActionsFollowRenames(ObjectId fileId) {
-		List<FileAction> actions = getActionsFollowRenamesRecursive(fileId);
+		List<FileAction> actions = getActionsFollowRenamesRecursive(fileId, Integer.MAX_VALUE);
 		Collections.reverse(actions);
 		return actions;
 	}
-	public List<FileAction> getActionsFollowRenamesRecursive(ObjectId fileId) {
+	public List<FileAction> getActionsFollowRenamesRecursive(ObjectId fileId, int referenceCommitIndex) {
 		List<FileAction> followedActions = new ArrayList<>();
 		List<FileAction> actions = new ArrayList<>(fileActionsCache.get(fileId));
+		actions = actions.stream()
+				.filter(ra -> getRevisionHashes().indexOf(getCommit(ra.getCommitId()).getRevisionHash()) < referenceCommitIndex)
+				.collect(Collectors.toList());
 		Collections.reverse(actions);
 		for (FileAction a : actions) {
 			followedActions.add(a);
 			if (a.getMode().equals("R") || a.getMode().equals("C") ) {
-				int referenceCommitIndex = getRevisionHashes().indexOf(getCommit(a.getCommitId()).getRevisionHash());
-				List<FileAction> recursiveActions = getActionsFollowRenamesRecursive(a.getOldFileId());
-				recursiveActions = recursiveActions.stream()
-						.filter(ra -> getRevisionHashes().indexOf(getCommit(ra.getCommitId()).getRevisionHash()) < referenceCommitIndex)
-						.collect(Collectors.toList());
+				int actionCommitIndex = getRevisionHashes().indexOf(getCommit(a.getCommitId()).getRevisionHash());
+				List<FileAction> recursiveActions = getActionsFollowRenamesRecursive(a.getOldFileId(), actionCommitIndex);
 				followedActions.addAll(recursiveActions);
 				break;
 			}
-			
 		}
 		
 		return followedActions;
 	}
 
-//	private void dumpActions(List<FileAction> actions) {
-//		System.out.println();
-//		for (FileAction a : actions) {
-//	    	dumpAction(a);
-//		}
-//	}
-//
-//	private void dumpAction(FileAction a) {
-//		File file = getFile(a.getFileId());
-//		Commit commit = getCommit(a.getCommitId());
-//		logger.info(""
-//				+"  "+getRevisionHashes().indexOf(commit.getRevisionHash())
-//				+"\t "+a.getMode()
-//				+"  "+commit.getRevisionHash().substring(0,8)
-//				+"  "+file.getPath()
-//				);
-//		if (a.getMode().equals("C")||a.getMode().equals("R")) {
-//			logger.info("\t\t    "
-//					+"  "+getFile(a.getOldFileId()).getPath()
-//					);
-//		}
-//	}
+	private void dumpActions(List<FileAction> actions) {
+		System.out.println();
+		for (FileAction a : actions) {
+	    	dumpAction(a);
+		}
+	}
+
+	private void dumpAction(FileAction a) {
+		File file = getFile(a.getFileId());
+		Commit commit = getCommit(a.getCommitId());
+		logger.info(""
+				+"  "+getRevisionHashes().indexOf(commit.getRevisionHash())
+				+"\t "+a.getMode()
+				+"  "+commit.getRevisionHash().substring(0,8)
+				+"  "+file.getPath()
+				);
+		if (a.getMode().equals("C")||a.getMode().equals("R")) {
+			logger.info("\t\t    "
+					+"  "+getFile(a.getOldFileId()).getPath()
+					);
+		}
+	}
 	
 	public List<FileAction> getActions(Commit commit) {
 		List<FileAction> actions = datastore.find(FileAction.class)
