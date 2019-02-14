@@ -142,12 +142,12 @@ public class MongoAdapter {
 		logger.info("Constructing file action map..");
 		logger.info("  Fetch commits..");
 		List<Commit> commits = getCommits();
-		int i = 0;
-		int size = commits.size();
+//		int i = 0;
+//		int size = commits.size();
 
 		for (Commit c : commits) {
-			i++;
-			logger.info("  Processing: "+i+"/"+size+" "+c.getRevisionHash()+"\r");
+//			i++;
+//			logger.info("  Processing: "+i+"/"+size+" "+c.getRevisionHash()+"\r");
 //			System.out.print("\tProcessing: "+i+"/"+size+"\r");
 			//skip merges
 			if (c.getParents()!=null && c.getParents().size()>1) {
