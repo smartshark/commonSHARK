@@ -1,6 +1,7 @@
 package common;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -141,12 +142,13 @@ public class MongoAdapter {
 		logger.info("Constructing file action map..");
 		logger.info("  Fetch commits..");
 		List<Commit> commits = getCommits();
-//		int i = 0;
-//		int size = commits.size();
+		int i = 0;
+		int size = commits.size();
 
 		for (Commit c : commits) {
-//			i++;
-			//logger.info("  Processing: "+i+"/"+size+" "+c.getRevisionHash());
+			i++;
+			logger.info("  Processing: "+i+"/"+size+" "+c.getRevisionHash()+"\r");
+//			System.out.print("\tProcessing: "+i+"/"+size+"\r");
 			//skip merges
 			if (c.getParents()!=null && c.getParents().size()>1) {
 				continue;
@@ -157,15 +159,8 @@ public class MongoAdapter {
 					fileActionsCache.put(a.getFileId(), new ArrayList<FileAction>());
 				}
 				fileActionsCache.get(a.getFileId()).add(a);
-				if (a.getMode().equals("R") || a.getMode().equals("C")) {
-					if (!fileActionsCache.containsKey(a.getOldFileId())) {
-						fileActionsCache.put(a.getOldFileId(), new ArrayList<FileAction>());
-					}
-					fileActionsCache.get(a.getOldFileId()).add(a);
-				}
 			}
 		}
-		//TODO: link renamed files?
 		logger.info("  Done!");
 	}
 	
@@ -174,104 +169,54 @@ public class MongoAdapter {
 		return actions;
 	}
 
-	public List<FileAction> getActionsFollowRenamesBackward(ObjectId fileId) {
-		List<FileAction> actions = new ArrayList<>(fileActionsCache.get(fileId));
-		FileAction first = actions.get(0);
-		if (first.getMode().equals("R") || first.getMode().equals("C") ) {
-			//TODO: this only works on one level
-			if (first.getFileId().equals(actions.get(actions.size()-1).getFileId())) {
-				actions.clear();
-				actions.add(first);
-			} else {
-				List<FileAction> followedActions = getActionsFollowRenamesBackward(first.getOldFileId());
-				Date firstDate = getCommit(first.getCommitId()).getCommitterDate();
-				followedActions = followedActions.stream()
-						.filter(a -> getCommit(a.getCommitId()).getCommitterDate().before(firstDate))
-						.filter(a->!(a.getMode().equals("C") && a.getOldFileId().equals(first.getFileId())))
-						.collect(Collectors.toList());
-				actions.addAll(0, followedActions);
-			}
-		}
-		
-		actions = actions.stream()
-				.filter(a->!((a.getMode().equals("C")
-//						   || a.getMode().equals("R")
-						   ) 
-						   && a.getOldFileId().equals(fileId)))
-				.collect(Collectors.toList());
-
-		return actions;
-	}
-
-	public List<FileAction> getActionsFollowRenamesForward(ObjectId fileId) {
-		ArrayList<FileAction> actions = new ArrayList<>(fileActionsCache.get(fileId));
-		
-//		for (FileAction a : actions) {
-//        	File file = getFile(a.getFileId());
-//        	Commit commit = getCommit(a.getCommitId());
-//
-//        	logger.info(""
-//        			+"  "+a.getMode()
-//        			+"  "+commit.getRevisionHash().substring(0,8)
-//        			+"  "+file.getPath());
-//
-//		}
-		
-		FileAction last = actions.get(actions.size()-1);
-		if (last.getMode().equals("R") && actions.size() > 1) {
-			//TODO: this only works on one level
-			if (last.getFileId().equals(actions.get(0).getFileId())) {
-				actions.clear();
-				actions.add(last);
-			} else {
-				actions.remove(last);
-				actions.addAll(getActionsFollowRenamesForward(last.getFileId()));
-			}
-		}
-		return actions;
-	}
-
-	
 	public List<FileAction> getActionsFollowRenames(ObjectId fileId) {
-		List<FileAction> actions = new ArrayList<>(fileActionsCache.get(fileId));
-		
-		FileAction first = actions.get(0);
-		if (first.getMode().equals("R") || first.getMode().equals("C") ) {
-			List<FileAction> followedActions = getActionsFollowRenamesBackward(first.getOldFileId());
-			Date firstDate = getCommit(first.getCommitId()).getCommitterDate();
-			followedActions = followedActions.stream()
-					.filter(a -> getCommit(a.getCommitId()).getCommitterDate().before(firstDate))
-					.filter(a->!(a.getMode().equals("C") && a.getOldFileId().equals(first.getFileId())))
-					.collect(Collectors.toList());
-			actions.addAll(0, followedActions);
-		}
-
-//		for (FileAction a : actions) {
-//        	File file = getFile(a.getFileId());
-//        	Commit commit = getCommit(a.getCommitId());
-//
-//        	logger.info(""
-//        			+"  "+a.getMode()
-//        			+"  "+commit.getRevisionHash().substring(0,8)
-//        			+"  "+file.getPath());
-//
-//		}
-		
-		FileAction last = actions.get(actions.size()-1);
-		if (last.getMode().equals("R")) {
-			actions.remove(last);
-			actions.addAll(getActionsFollowRenamesForward(last.getFileId()));
-		}
-
-		actions = actions.stream()
-				.filter(a->!((a.getMode().equals("C")
-//						   || a.getMode().equals("R")
-						   )
-						   && a.getOldFileId().equals(fileId)))
-				.collect(Collectors.toList());
-
+		List<FileAction> actions = getActionsFollowRenamesRecursive(fileId);
+		Collections.reverse(actions);
 		return actions;
 	}
+	public List<FileAction> getActionsFollowRenamesRecursive(ObjectId fileId) {
+		List<FileAction> followedActions = new ArrayList<>();
+		List<FileAction> actions = new ArrayList<>(fileActionsCache.get(fileId));
+		Collections.reverse(actions);
+		for (FileAction a : actions) {
+			followedActions.add(a);
+			if (a.getMode().equals("R") || a.getMode().equals("C") ) {
+				int referenceCommitIndex = getRevisionHashes().indexOf(getCommit(a.getCommitId()).getRevisionHash());
+				List<FileAction> recursiveActions = getActionsFollowRenamesRecursive(a.getOldFileId());
+				recursiveActions = recursiveActions.stream()
+						.filter(ra -> getRevisionHashes().indexOf(getCommit(ra.getCommitId()).getRevisionHash()) < referenceCommitIndex)
+						.collect(Collectors.toList());
+				followedActions.addAll(recursiveActions);
+				break;
+			}
+			
+		}
+		
+		return followedActions;
+	}
+
+//	private void dumpActions(List<FileAction> actions) {
+//		System.out.println();
+//		for (FileAction a : actions) {
+//	    	dumpAction(a);
+//		}
+//	}
+//
+//	private void dumpAction(FileAction a) {
+//		File file = getFile(a.getFileId());
+//		Commit commit = getCommit(a.getCommitId());
+//		logger.info(""
+//				+"  "+getRevisionHashes().indexOf(commit.getRevisionHash())
+//				+"\t "+a.getMode()
+//				+"  "+commit.getRevisionHash().substring(0,8)
+//				+"  "+file.getPath()
+//				);
+//		if (a.getMode().equals("C")||a.getMode().equals("R")) {
+//			logger.info("\t\t    "
+//					+"  "+getFile(a.getOldFileId()).getPath()
+//					);
+//		}
+//	}
 	
 	public List<FileAction> getActions(Commit commit) {
 		List<FileAction> actions = datastore.find(FileAction.class)
@@ -343,6 +288,9 @@ public class MongoAdapter {
 		if (revisionHashes.isEmpty()) {
 			commits.sort(Comparator.comparing(Commit::getCommitterDate)
 					.thenComparing(Commit::getAuthorDate));
+			for (Commit c : commits) {
+				revisionHashes.add(c.getRevisionHash());
+			}
 		} else {
 			commits.sort((e1, e2)
 					-> revisionHashes.indexOf(e1.getRevisionHash())
@@ -501,6 +449,14 @@ public class MongoAdapter {
 
 	public void setRevisionHashes(List<String> revisionHashes) {
 		this.revisionHashes = revisionHashes;
+	}
+
+	public LinkedHashMap<ObjectId, ArrayList<FileAction>> getFileActionsCache() {
+		return fileActionsCache;
+	}
+
+	public void setFileActionsCache(LinkedHashMap<ObjectId, ArrayList<FileAction>> fileActionsCache) {
+		this.fileActionsCache = fileActionsCache;
 	}
 
 }
