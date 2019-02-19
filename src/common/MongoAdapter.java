@@ -1,5 +1,9 @@
 package common;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -163,6 +167,48 @@ public class MongoAdapter {
 		}
 		logger.info("  Done!");
 	}
+	
+	@SuppressWarnings("unchecked")
+	public void constructCachedFileActionMap(String name) {
+		String cachedFilename = "caches/lastrun-"+name+".bin";
+		if (new java.io.File(cachedFilename).exists()) {
+			setFileActionsCache((LinkedHashMap<ObjectId, ArrayList<FileAction>>) load(cachedFilename));
+		} else { 
+			constructFileActionMap();
+			new java.io.File(cachedFilename).getParentFile().mkdirs();
+			store(cachedFilename, getFileActionsCache());
+		}
+	}
+	
+	private Object load(String filename) {
+        FileInputStream fis = null;
+        ObjectInputStream in = null;
+        Object o = null;
+        try {
+            fis = new FileInputStream(filename);
+            in = new ObjectInputStream(fis);
+            o = in.readObject();
+            in.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return o;
+	}
+	
+	private void store(String filename, Object o) {
+		FileOutputStream fos = null;
+	    ObjectOutputStream out = null;
+        try {
+            fos = new FileOutputStream(filename);
+            out = new ObjectOutputStream(fos);
+            out.writeObject(o);
+            out.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+	}
+
+
 	
 	public List<FileAction> getActions(ObjectId fileId) {
 		ArrayList<FileAction> actions = fileActionsCache.get(fileId);
