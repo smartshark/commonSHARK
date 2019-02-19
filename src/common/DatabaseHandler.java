@@ -22,6 +22,7 @@ public class DatabaseHandler {
 	        				hostname, 
 	        				port), 
 	        		db);
+	        datastore.ensureIndexes();
 	    } catch (Exception e) {
 		      System.err.println(e.getMessage());
 		      e.printStackTrace(System.err);
@@ -63,6 +64,7 @@ public class DatabaseHandler {
 	        		client, 
 	        		dbName);
 	      }
+	      datastore.ensureIndexes();
 	    } catch (Exception e) {
 	      System.err.println(e.getMessage());
 	      e.printStackTrace(System.err);
