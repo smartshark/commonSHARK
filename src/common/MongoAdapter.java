@@ -220,9 +220,17 @@ public class MongoAdapter {
 		Collections.reverse(actions);
 		return actions;
 	}
+	
 	public List<FileAction> getActionsFollowRenamesRecursive(ObjectId fileId, int referenceCommitIndex) {
 		List<FileAction> followedActions = new ArrayList<>();
-		List<FileAction> actions = new ArrayList<>(fileActionsCache.get(fileId));
+		List<FileAction> actions = new ArrayList<>();
+		if (fileActionsCache.containsKey(fileId)) {
+			actions = new ArrayList<>(fileActionsCache.get(fileId));
+		} else {
+			//handle renames within merges
+			actions = followActionsAcrossMerges(fileId, referenceCommitIndex);
+		}
+		
 		actions = actions.stream()
 				.filter(ra -> getRevisionHashes().indexOf(getCommit(ra.getCommitId()).getRevisionHash()) < referenceCommitIndex)
 				.collect(Collectors.toList());
@@ -238,6 +246,35 @@ public class MongoAdapter {
 		}
 		
 		return followedActions;
+	}
+
+	private List<FileAction> followActionsAcrossMerges(ObjectId fileId, int referenceCommitIndex) {
+		List<FileAction> actions = new ArrayList<>();
+		File f = getFile(fileId);
+		//TODO: why is this called twice
+		logger.warn("  No actions found for "+f.getPath());
+		logger.info("    Processing actions from merges..");
+		List<FileAction> actionsNoCache = getActionsNoCache(fileId);
+		sortActions(actionsNoCache);
+		actionsNoCache = actionsNoCache.stream()
+				.filter(ra -> getRevisionHashes().indexOf(getCommit(ra.getCommitId()).getRevisionHash()) < referenceCommitIndex)
+				.filter(ra -> ra.getMode().equals("R") || ra.getMode().equals("C") )
+				.collect(Collectors.toList());
+		//process in reverse order and stop on first hit
+		Collections.reverse(actionsNoCache);
+		for (FileAction a : actionsNoCache) {
+			if (fileActionsCache.containsKey(a.getOldFileId())) {
+				actions = new ArrayList<>(fileActionsCache.get(a.getOldFileId()));
+				logger.warn("  Found actions");
+				dumpAction(a);
+				break;
+				//TODO: process other actions?
+			} else {
+				//TODO: process recursively
+				//actions = followActionsAcrossMerges(a.getOldFileId(), referenceCommitIndex);
+			}
+		}
+		return actions;
 	}
 
 	private void dumpActions(List<FileAction> actions) {
@@ -257,7 +294,7 @@ public class MongoAdapter {
 				+"  "+file.getPath()
 				);
 		if (a.getMode().equals("C")||a.getMode().equals("R")) {
-			logger.info("\t\t    "
+			logger.info("\t\t\t    "
 					+"  "+getFile(a.getOldFileId()).getPath()
 					);
 		}
@@ -276,6 +313,12 @@ public class MongoAdapter {
 		return cAction;
 	}
 
+	public List<FileAction> getActionsNoCache(ObjectId fileId) {
+		List<FileAction> actions = datastore.find(FileAction.class)
+			.field("file_id").equal(fileId).asList();
+		return actions;
+	}
+	
 	public List<Hunk> getHunks(FileAction a) {
 		List<Hunk> hunks = datastore.find(Hunk.class)
 			.field("file_action_id").equal(a.getId()).asList();
@@ -342,6 +385,20 @@ public class MongoAdapter {
 		             - revisionHashes.indexOf(e2.getRevisionHash()));
 		}
 	}
+
+	private void sortActions(List<FileAction> actions) {
+		if (revisionHashes.isEmpty()) {
+			actions.sort((e1, e2)
+					-> getCommit(e1.getCommitId()).getCommitterDate()
+			.compareTo(getCommit(e2.getCommitId()).getCommitterDate())
+					);
+		} else {
+			actions.sort((e1, e2)
+					-> revisionHashes.indexOf(getCommit(e1.getCommitId()).getRevisionHash())
+		             - revisionHashes.indexOf(getCommit(e2.getCommitId()).getRevisionHash()));
+		}
+	}
+
 	
 	public Commit getCommit(String hash) {
 		if (!commitCache.containsKey(hash)) {
