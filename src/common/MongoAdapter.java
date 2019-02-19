@@ -173,10 +173,16 @@ public class MongoAdapter {
 		String cachedFilename = "caches/lastrun-"+name+".bin";
 		if (new java.io.File(cachedFilename).exists()) {
 			setFileActionsCache((LinkedHashMap<ObjectId, ArrayList<FileAction>>) load(cachedFilename));
+			if (new java.io.File(cachedFilename+"rh").exists()) {
+				setRevisionHashes((List<String>) load(cachedFilename+"rh"));
+			}
 		} else { 
 			constructFileActionMap();
 			new java.io.File(cachedFilename).getParentFile().mkdirs();
 			store(cachedFilename, getFileActionsCache());
+			if (!getRevisionHashes().isEmpty()) {
+				store(cachedFilename+"rh", getRevisionHashes());
+			}
 		}
 	}
 	
