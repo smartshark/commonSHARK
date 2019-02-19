@@ -528,11 +528,13 @@ public class MongoAdapter {
 	}
 
 	public Datastore getTargetstore(String hostname, int port, String database) {
-		return DatabaseHandler.createDatastore(hostname, port, database);
+		this.targetstore = DatabaseHandler.createDatastore(hostname, port, database);
+		return this.targetstore;
 	}
 
 	public Datastore getTargetstore(String database) {
-		return DatabaseHandler.createDatastore(parameter, database);
+		this.targetstore = DatabaseHandler.createDatastore(parameter, database);
+		return this.targetstore;
 	}
 
 	public boolean isRecordProgress() {
