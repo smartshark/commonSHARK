@@ -80,7 +80,7 @@ public class Parameter {
     debugLevel = cmd.getOptionValue("d", "ERROR");
 
 	separateDatabase = cmd.hasOption("sd");
-	separateDatabase = cmd.hasOption("ca");
+	cacheActions = cmd.hasOption("ca");
 
 	ConfigurationHandler.getInstance().setLogLevel(debugLevel);
 
