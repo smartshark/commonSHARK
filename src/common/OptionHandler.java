@@ -129,5 +129,10 @@ public class OptionHandler {
     option.setArgName("path");
     options.addOption(option);
 
+    option = new Option("ca", "Cache file action map. Default: No");
+    option.setRequired(false);
+    option.setLongOpt("cache_actions");
+    option.setArgs(0);
+    options.addOption(option);
   }
 }

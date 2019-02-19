@@ -34,6 +34,7 @@ public class Parameter {
   private String dbAuthentication;
 
   private boolean separateDatabase;
+  private boolean cacheActions;
 
   // debug parameter
   private String debugLevel;
@@ -79,6 +80,7 @@ public class Parameter {
     debugLevel = cmd.getOptionValue("d", "ERROR");
 
 	separateDatabase = cmd.hasOption("sd");
+	separateDatabase = cmd.hasOption("ca");
 
 	ConfigurationHandler.getInstance().setLogLevel(debugLevel);
 
@@ -200,6 +202,11 @@ public class Parameter {
   public boolean isSeparateDatabase() {
     checkIfInitialised();
 	return separateDatabase;
+  }
+
+  public boolean isCacheActions() {
+    checkIfInitialised();
+	return cacheActions;
   }
 
   public String getConfiguration() {
