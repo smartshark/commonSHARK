@@ -11,5 +11,6 @@
 	<classpathentry exported="true" kind="lib" path="lib/slf4j-api-1.7.25.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/org.apache.commons.cli_1.2.0.v201404270220.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jSHARK-2.0.2-SNAPSHOT.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/org.eclipse.jgit_5.0.0.201806131550-r.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
