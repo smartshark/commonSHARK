@@ -101,6 +101,14 @@ public class OptionHandler {
     option.setArgs(0);
     options.addOption(option);
 
+    option = new Option("sdp", "Separate target database prefix.");
+    option.setRequired(false);
+    option.setLongOpt("prefix");
+    option.setArgs(1);
+    option.setArgName("prefix");
+    options.addOption(option);
+
+    
     option = new Option("c", "Configuration file (other options will override configuration entries).");
     option.setRequired(false);
     option.setLongOpt("configuration");

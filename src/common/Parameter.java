@@ -39,6 +39,7 @@ public class Parameter {
   // debug parameter
   private String debugLevel;
   private String configuration;
+  private String prefix;
 
   private boolean initialized = false;
   private OptionHandler optionsHandler;
@@ -78,6 +79,7 @@ public class Parameter {
     dbPort = Integer.parseInt(cmd.getOptionValue("p", "27017"));
     dbAuthentication = cmd.getOptionValue("a", "");
     debugLevel = cmd.getOptionValue("d", "ERROR");
+    prefix = cmd.getOptionValue("sdp", "");
 
 	separateDatabase = cmd.hasOption("sd");
 	cacheActions = cmd.hasOption("ca");
@@ -211,6 +213,10 @@ public class Parameter {
 
   public String getConfiguration() {
 	return configuration;
+  }
+
+  public String getPrefix() {
+	return prefix;
   }
 
 public ConfigurationHandler getConfigurationHandler() {
