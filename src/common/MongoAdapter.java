@@ -37,6 +37,7 @@ public class MongoAdapter {
 	private HashMap<ObjectId, File> fileIdCache = new HashMap<>();
 	private HashMap<String, Commit> commitCache = new HashMap<>();
 	private HashMap<ObjectId, Commit> commitIdCache = new HashMap<>();
+	private HashMap<ObjectId, FileAction> actionIdCache = new HashMap<>();
 	private HashMap<ObjectId, List<HunkBlameLine>> hblCache = new HashMap<>();
 	private HashMap<ObjectId, CFAState> cfaCache = new HashMap<>();
 	private HashMap<ObjectId, CFAState> cfaEntityCache = new HashMap<>();
@@ -317,6 +318,14 @@ public class MongoAdapter {
 			.field("commit_id").equal(commitId)
 			.field("file_id").equal(fileId).get();
 		return cAction;
+	}
+
+	public FileAction getAction(ObjectId actionId) {
+		if (!actionIdCache.containsKey(actionId)) {
+			FileAction cAction = datastore.get(FileAction.class, actionId);
+			actionIdCache.put(actionId, cAction);
+		}
+		return actionIdCache.get(actionId);
 	}
 
 	public List<FileAction> getActionsNoCache(ObjectId fileId) {
