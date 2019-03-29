@@ -25,6 +25,7 @@ import de.ugoe.cs.smartshark.model.File;
 import de.ugoe.cs.smartshark.model.FileAction;
 import de.ugoe.cs.smartshark.model.Hunk;
 import de.ugoe.cs.smartshark.model.HunkBlameLine;
+import de.ugoe.cs.smartshark.model.People;
 import de.ugoe.cs.smartshark.model.PluginProgress;
 import de.ugoe.cs.smartshark.model.VCSSystem;
 
@@ -38,6 +39,7 @@ public class MongoAdapter {
 	private HashMap<String, Commit> commitCache = new HashMap<>();
 	private HashMap<ObjectId, Commit> commitIdCache = new HashMap<>();
 	private HashMap<ObjectId, FileAction> actionIdCache = new HashMap<>();
+	private HashMap<ObjectId, People> peopleIdCache = new HashMap<>();
 	private HashMap<ObjectId, List<HunkBlameLine>> hblCache = new HashMap<>();
 	private HashMap<ObjectId, CFAState> cfaCache = new HashMap<>();
 	private HashMap<ObjectId, CFAState> cfaEntityCache = new HashMap<>();
@@ -68,56 +70,50 @@ public class MongoAdapter {
 	public List<CodeEntityState> getCodeEntityStates(ObjectId commitId, ObjectId fileId) {
 		List<CodeEntityState> states = new ArrayList<>();
 		Commit commit = datastore.get(Commit.class, commitId);
-		for (ObjectId id : commit.getCodeEntityStates()) {
-			List<CodeEntityState> ces = datastore.find(CodeEntityState.class)
-					.field("_id").equal(id)
-					.field("file_id").equal(fileId)
+		List<CodeEntityState> ces = datastore.find(CodeEntityState.class)
+				.field("_id").in(commit.getCodeEntityStates())
+				.field("file_id").equal(fileId)
 //					.order("start_line")
-					.asList();
-			ces.sort(Comparator.comparing(CodeEntityState::getStartLine));
-			states.addAll(ces);
-		}
+				.asList();
+		ces.sort(Comparator.comparing(CodeEntityState::getStartLine));
+		states.addAll(ces);
 		return states;
 	}
 	
 	public List<CodeEntityState> getCodeEntityStates(ObjectId commitId, ObjectId fileId, String type) {
 		List<CodeEntityState> states = new ArrayList<>();
 		Commit commit = datastore.get(Commit.class, commitId);
-		for (ObjectId id : commit.getCodeEntityStates()) {
-			List<CodeEntityState> ces = datastore.find(CodeEntityState.class)
-					.field("_id").equal(id)
-					.field("file_id").equal(fileId)
-					.field("ce_type").equal(type)
+		List<CodeEntityState> ces = datastore.find(CodeEntityState.class)
+				.field("_id").in(commit.getCodeEntityStates())
+				.field("file_id").equal(fileId)
+				.field("ce_type").equal(type)
 //					.order("start_line")
-					.asList();
-			ces.sort(Comparator.comparing(CodeEntityState::getStartLine));
-			states.addAll(ces);
-		}
+				.asList();
+		ces.sort(Comparator.comparing(CodeEntityState::getStartLine));
+		states.addAll(ces);
 		return states;
 	}
 
 	public List<CodeEntityState> getCodeEntityStates(ObjectId commitId, String type) {
 		List<CodeEntityState> states = new ArrayList<>();
 		Commit commit = datastore.get(Commit.class, commitId);
-		for (ObjectId id : commit.getCodeEntityStates()) {
-			List<CodeEntityState> ces = datastore.find(CodeEntityState.class)
-					.field("_id").equal(id)
-					.field("ce_type").equal(type)
+		List<CodeEntityState> ces = datastore.find(CodeEntityState.class)
+				.field("_id").in(commit.getCodeEntityStates())
+				.field("ce_type").equal(type)
 //					.order("start_line")
-					.asList();
-			ces.sort(Comparator.comparing(CodeEntityState::getStartLine));
-			states.addAll(ces);
-		}
+				.asList();
+		ces.sort(Comparator.comparing(CodeEntityState::getStartLine));
+		states.addAll(ces);
 		return states;
 	}
 
 	public List<CodeEntityState> getCodeEntityStates(ObjectId commitId) {
 		List<CodeEntityState> states = new ArrayList<>();
 		Commit commit = datastore.get(Commit.class, commitId);
-		for (ObjectId id : commit.getCodeEntityStates()) {
-			CodeEntityState ces = datastore.get(CodeEntityState.class, id);
-			states.add(ces);
-		}
+		List<CodeEntityState> ces = datastore.find(CodeEntityState.class)
+				.field("_id").in(commit.getCodeEntityStates())
+				.asList();
+		states.addAll(ces);
 		return states;
 	}
 
@@ -187,7 +183,7 @@ public class MongoAdapter {
 		}
 	}
 	
-	private Object load(String filename) {
+	public Object load(String filename) {
         FileInputStream fis = null;
         ObjectInputStream in = null;
         Object o = null;
@@ -202,7 +198,7 @@ public class MongoAdapter {
         return o;
 	}
 	
-	private void store(String filename, Object o) {
+	public void store(String filename, Object o) {
 		FileOutputStream fos = null;
 	    ObjectOutputStream out = null;
         try {
@@ -334,6 +330,14 @@ public class MongoAdapter {
 		return actions;
 	}
 	
+	public People getPerson(ObjectId pid) {
+		if (!peopleIdCache.containsKey(pid)) {
+			People person = datastore.get(People.class, pid);
+			peopleIdCache.put(pid, person);
+		}
+		return peopleIdCache.get(pid);
+	}
+
 	public List<Hunk> getHunks(FileAction a) {
 		List<Hunk> hunks = datastore.find(Hunk.class)
 			.field("file_action_id").equal(a.getId()).asList();
